@@ -253,7 +253,7 @@ class Coyote {
     if (cards.some(({ type }) => type === 'maxZero')) {
       cards = cards.filter(({ type }) => ['normal', 'reset'].includes(type));
       cards.sort((a, b) => b.value - a.value);
-      cards[0].value = 0;
+      cards = cards.slice(1);
     }
     const score = cards.reduce((pre, card) => pre + card.value, 0);
     if (isTwice) {
@@ -364,7 +364,7 @@ class Coyote {
       });
     }
     const normalDescription = valueGroups
-      .map((sameNumbers) => sameNumbers.join(' '))
+      .map((sameNumbers) => sameNumbers.join(' / '))
       .join('\n');
     const optionDescription = optionCards
       .map((card) => Coyote.parseCardValue(card))
