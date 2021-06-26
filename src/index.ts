@@ -25,7 +25,7 @@ client.on('message', (message) => {
     ['!join', '!start', '!call', '!life', '!discards'].includes(command) &&
     !servers[guildId]
   ) {
-    message.channel.send('先に```\n!launch\n```してね');
+    message.channel.send('先に```\n!launch [ライフ]\n```してね');
     return;
   }
   const battle = servers[guildId];
@@ -36,7 +36,7 @@ client.on('message', (message) => {
   }
   switch (command) {
     case '!launch':
-      servers[guildId] = new Coyote();
+      servers[guildId] = new Coyote(getLife(params));
       message.channel.send(
         'この鯖でのコヨーテを始めるよ```\n!join\n```で参加してね',
       );
@@ -81,3 +81,14 @@ client.on('message', (message) => {
 
 const TOKEN = process.env.TOKEN as string;
 client.login(TOKEN);
+
+const getLife = (params: string[] | null) => {
+  if (params === null) {
+    return 2;
+  }
+  const life = parseInt(params[0], 10);
+  if (Number.isNaN(life)) {
+    return 2;
+  }
+  return life;
+};

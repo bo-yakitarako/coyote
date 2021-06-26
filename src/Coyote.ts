@@ -21,8 +21,9 @@ class Coyote {
   private count: number | null;
   private callerIndex: number;
   private isStart: boolean;
+  private startLife: number;
 
-  constructor() {
+  constructor(startLife = 2) {
     this.cards = shuffle(cards);
     this.discards = [];
     this.players = [];
@@ -30,6 +31,7 @@ class Coyote {
     this.count = null;
     this.callerIndex = 0;
     this.isStart = false;
+    this.startLife = startLife;
   }
 
   public join(message: Message) {
@@ -43,7 +45,8 @@ class Coyote {
       return;
     }
     const card = this.cards[0];
-    const player = { id, name, card, life: 2, history: {} } as Player;
+    const life = this.startLife;
+    const player = { id, name, card, life, history: {} } as Player;
     this.players = [...this.players, player];
     message.channel.send(`<@!${id}> 参加しましたー`);
   }
@@ -309,7 +312,7 @@ class Coyote {
     this.callerIndex = 0;
     this.players = [...this.players, ...this.deadPlayers];
     this.players.forEach((p, index) => {
-      this.players[index].life = 2;
+      this.players[index].life = this.startLife;
     });
     this.deadPlayers = [];
     this.cards = shuffle(cards);
