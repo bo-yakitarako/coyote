@@ -70,19 +70,13 @@ class Coyote {
     }
   }
 
-  private static sendDealedCards(
-    message: Message,
-    players: Player[],
-    id: string,
-  ) {
+  private static sendDealedCards(message: Message, players: Player[], id: string) {
     const description = players
       .map(({ name, card }) => {
         return `${name}: ${Coyote.parseCardValue(card)}`;
       })
       .join('\n');
-    const member = (message.guild as Guild).members.cache.find(
-      (user) => user.id === id,
-    );
+    const member = (message.guild as Guild).members.cache.find((user) => user.id === id);
     if (typeof member !== 'undefined') {
       member.user.send({
         embed: {
@@ -165,9 +159,7 @@ class Coyote {
       return;
     }
     if (this.count !== null && number <= this.count) {
-      message.channel.send(
-        `<@!${message.author.id}> 「${this.count}」よりデカいやつオナシャス`,
-      );
+      message.channel.send(`<@!${message.author.id}> 「${this.count}」よりデカいやつオナシャス`);
       return;
     }
     this.count = number;
@@ -329,8 +321,7 @@ class Coyote {
   }
 
   private moveNextCaller() {
-    this.callerIndex =
-      this.callerIndex < this.players.length - 1 ? this.callerIndex + 1 : 0;
+    this.callerIndex = this.callerIndex < this.players.length - 1 ? this.callerIndex + 1 : 0;
   }
 
   public get started() {
@@ -350,12 +341,8 @@ class Coyote {
   }
 
   public showDiscards(message: Message) {
-    const normalCards = this.discards.filter(({ type }) =>
-      ['normal', 'reset'].includes(type),
-    );
-    const optionCards = this.discards.filter(
-      ({ type }) => !['normal', 'reset'].includes(type),
-    );
+    const normalCards = this.discards.filter(({ type }) => ['normal', 'reset'].includes(type));
+    const optionCards = this.discards.filter(({ type }) => !['normal', 'reset'].includes(type));
     const valueGroups = [] as number[][];
     if (normalCards.length > 0) {
       normalCards.sort((a, b) => a.value - b.value);
@@ -366,12 +353,8 @@ class Coyote {
         valueGroups[valueGroups.length - 1].push(value);
       });
     }
-    const normalDescription = valueGroups
-      .map((sameNumbers) => sameNumbers.join(' / '))
-      .join('\n');
-    const optionDescription = optionCards
-      .map((card) => Coyote.parseCardValue(card))
-      .join('\n');
+    const normalDescription = valueGroups.map((sameNumbers) => sameNumbers.join(' / ')).join('\n');
+    const optionDescription = optionCards.map((card) => Coyote.parseCardValue(card)).join('\n');
     const description = `${normalDescription}\n${optionDescription}`;
     const embed = {
       title: '捨てカード一覧',

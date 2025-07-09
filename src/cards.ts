@@ -31,12 +31,10 @@ const minusTens: Card[] = [...Array(1)].map(() => ({
   value: -10,
 }));
 
-const options: Card[] = (['twice', 'maxZero', '?'] as Card['type'][]).map(
-  (type) => ({
-    type,
-    value: 0,
-  }),
-);
+const options: Card[] = (['twice', 'maxZero', '?'] as Card['type'][]).map((type) => ({
+  type,
+  value: 0,
+}));
 
 const cards = [
   ...options,
