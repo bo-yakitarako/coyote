@@ -1,6 +1,18 @@
-import { Guild, Message as OriginalMessage, OmitPartialGroupDMChannel } from 'discord.js';
+import {
+  Guild,
+  Message as OriginalMessage,
+  OmitPartialGroupDMChannel,
+  Interaction,
+  ButtonInteraction,
+  User,
+  ChatInputCommandInteraction,
+  MessageFlags,
+  ActionRowBuilder,
+  ButtonBuilder,
+} from 'discord.js';
 import { config } from 'dotenv';
 import { Card, cards, shuffle } from './cards';
+import { button } from './components/buttons';
 
 type Player = {
   id: string;
@@ -15,7 +27,30 @@ type Message = OmitPartialGroupDMChannel<OriginalMessage<boolean>>;
 const color = 0xe83e1b;
 config();
 
-class Coyote {
+const guilds = {} as { [key in string]: Coyote };
+export const battle = {
+  get({ guildId }: Interaction | Message) {
+    if (guildId === null) {
+      return null;
+    }
+    return guilds[guildId] ?? null;
+  },
+  set({ guildId }: Interaction | Message, life = 2) {
+    if (guildId === null) {
+      return null;
+    }
+    guilds[guildId] = new Coyote(life);
+    return guilds[guildId];
+  },
+  remove({ guildId }: Interaction | Message) {
+    if (guildId === null) {
+      return;
+    }
+    delete guilds[guildId];
+  },
+};
+
+export class Coyote {
   private cards: Card[];
   private discards: Card[];
   private players: Player[];
@@ -36,60 +71,41 @@ class Coyote {
     this.startLife = startLife;
   }
 
-  public join(message: Message) {
-    const { id, username: name } = message.author;
+  public async join(interaction: ButtonInteraction) {
+    const { id, displayName: name } = interaction.user;
     if (this.isStart) {
-      message.channel.send(`<@!${id}> スタートしちゃったから参加できないよー`);
+      await interaction.reply(`<@!${id}> スタートしちゃったから参加できないよー`);
       return;
     }
-    if (this.isMember(message)) {
-      message.channel.send(`<@!${id}> もう参加してるじゃんかー`);
+    if (this.isMember(interaction.user)) {
+      await interaction.reply(`<@!${id}> もう参加してるじゃんかー`);
       return;
     }
     const card = this.cards[0];
     const life = this.startLife;
     const player = { id, name, card, life, history: {} } as Player;
     this.players = [...this.players, player];
-    message.channel.send(`<@!${id}> 参加しましたー`);
+    await interaction.reply(`<@!${id}> 参加しましたー`);
   }
 
-  public dealCards(message: Message) {
+  public dealCards() {
     this.players.forEach((player, index) => {
       this.dealCardsForOnePlayer(index);
     });
-    this.players.forEach(({ id }) => {
-      const opposites = this.players.filter((player) => player.id !== id);
-      Coyote.sendDealedCards(message, opposites, id);
-    });
-    this.deadPlayers.forEach(({ id }) => {
-      Coyote.sendDealedCards(message, this.players, id);
-    });
   }
 
-  public cheat(message: Message) {
-    if (message.author.id === process.env.BO_ID) {
-      Coyote.sendDealedCards(message, this.players, message.author.id);
-    }
-  }
-
-  private static sendDealedCards(message: Message, players: Player[], id: string) {
-    const description = players
+  public embedDealedCards(guild: Guild, userId: string) {
+    const description = this.players
+      .filter(({ id }) => id !== userId)
       .map(({ name, card }) => {
-        return `${name}: ${Coyote.parseCardValue(card)}`;
+        return `${name}: ${Coyote.displayCardValue(card)}`;
       })
       .join('\n');
-    const member = (message.guild as Guild).members.cache.find((user) => user.id === id);
-    if (typeof member !== 'undefined') {
-      member.user.send({
-        embeds: [
-          {
-            title: 'みんなのカード',
-            color,
-            description,
-          },
-        ],
-      });
-    }
+    return {
+      title: 'みんなのカード',
+      color,
+      description,
+    };
   }
 
   private dealCardsForOnePlayer(playerIndex: number) {
@@ -105,7 +121,7 @@ class Coyote {
     }
   }
 
-  private static parseCardValue({ type, value }: Card) {
+  private static displayCardValue({ type, value }: Card) {
     switch (type) {
       case 'maxZero':
         return '**MAX→0**';
@@ -118,8 +134,16 @@ class Coyote {
     }
   }
 
-  public isMember(message: Message) {
-    return this.players.some(({ id }) => id === message.author.id);
+  public isMember(user: User) {
+    return this.players.some(({ id }) => id === user.id);
+  }
+
+  public isCurrentPlayer(user: User) {
+    return this.isStart && this.isCaller(user);
+  }
+
+  public isMultiplePlayers() {
+    return this.players.length > 1;
   }
 
   public start() {
@@ -137,15 +161,14 @@ class Coyote {
     this.players = shuffled;
   }
 
-  public sendStart(message: Message, basic = 'コヨーテ開始しました！') {
-    const order = this.players.map(({ name }) => name).join('→');
-    const command = '```\n!call [数値|coyote]\n```';
-    const description = `で<@!${this.players[0].id}>から始めてください！`;
-    message.channel.send(`${basic}\n順番: ${order}\n${command}${description}`);
+  public createStartMessage(basic = 'コヨーテを開始しました！') {
+    const order = this.players.map(({ name }) => name).join(' → ');
+    const description = `<@!${this.players[0].id}>から数字かコヨーテを唱えましょう！`;
+    return `${basic}\n順番: ${order}\n\n${description}`;
   }
 
-  public isCaller(message: Message) {
-    return message.author.id === this.players[this.callerIndex].id;
+  public isCaller(user: User) {
+    return user.id === this.players[this.callerIndex].id;
   }
 
   public async call(message: Message, param: string) {
@@ -155,15 +178,14 @@ class Coyote {
     }
     const number = parseInt(param, 10);
     if (Number.isNaN(number)) {
-      message.channel.send(`<@!${message.author.id}> 数字を指定してくれぃ`);
       return;
     }
     if (this.count === null && number < 1) {
-      message.channel.send(`<@!${message.author.id}> 1以上やで`);
+      message.reply(`1以上やで`);
       return;
     }
     if (this.count !== null && number <= this.count) {
-      message.channel.send(`<@!${message.author.id}> 「${this.count}」よりデカいやつオナシャス`);
+      message.reply(`「${this.count}」よりデカいやつオナシャス`);
       return;
     }
     this.count = number;
@@ -171,6 +193,7 @@ class Coyote {
     const nextPlayer = `次→ <@!${this.players[this.callerIndex].id}>`;
     const description = `**${number}**`;
 
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button.cards);
     await message.channel.send({
       embeds: [
         {
@@ -179,6 +202,7 @@ class Coyote {
           color,
         },
       ],
+      components: [row],
     });
     message.channel.send(nextPlayer);
   }
@@ -186,7 +210,7 @@ class Coyote {
   private callCoyote(message: Message) {
     const description = this.players
       .map(({ name, card }) => {
-        return `${name}: ${Coyote.parseCardValue(card)}`;
+        return `${name}: ${Coyote.displayCardValue(card)}`;
       })
       .join('\n');
 
@@ -221,7 +245,7 @@ class Coyote {
     const cards = this.players.map(({ card }) => card);
     if (additional !== null) {
       fields.push({
-        name: `加算カード: ${Coyote.parseCardValue(additional)}`,
+        name: `加算カード: ${Coyote.displayCardValue(additional)}`,
         value: '「？」が含まれていたので、山札から1枚引いて加算されました',
       });
       cards.push(additional);
@@ -293,8 +317,12 @@ class Coyote {
       this.discards = [];
     }
     this.orderByCaller();
-    this.dealCards(message);
-    this.sendStart(message, '次のゲームに移ります');
+    this.dealCards();
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button.cards);
+    message.channel.send({
+      content: this.createStartMessage('次のゲームに移ります'),
+      components: [row],
+    });
     this.count = null;
   }
 
@@ -306,17 +334,8 @@ class Coyote {
       description: 'おめでとうございます✨',
     };
     await message.channel.send({ embeds: [embed] });
-    this.count = null;
-    this.callerIndex = 0;
-    this.players = [...this.players, ...this.deadPlayers];
-    this.players.forEach((p, index) => {
-      this.players[index].life = this.startLife;
-    });
-    this.deadPlayers = [];
-    this.cards = shuffle(cards);
-    this.discards = [];
-    this.isStart = false;
-    message.channel.send('また始める場合は```\n!start\n```してね');
+    await message.channel.send('また始める場合は```\n/launch\n```してね');
+    battle.remove(message);
   }
 
   private orderByCaller() {
@@ -334,7 +353,7 @@ class Coyote {
     return this.isStart;
   }
 
-  public showLife(message: Message) {
+  public async showLife(interaction: ChatInputCommandInteraction) {
     const survivors = this.players.map(({ name, life }) => `${name}: ${life}`);
     const dead = this.deadPlayers.map(({ name }) => `${name}: 死亡`);
     const description = `${survivors.join('\n')}\n${dead.join('\n')}`;
@@ -343,10 +362,10 @@ class Coyote {
       color,
       description,
     };
-    message.channel.send({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   }
 
-  public showDiscards(message: Message) {
+  public async showDiscards(interaction: ChatInputCommandInteraction) {
     const normalCards = this.discards.filter(({ type }) => ['normal', 'reset'].includes(type));
     const optionCards = this.discards.filter(({ type }) => !['normal', 'reset'].includes(type));
     const valueGroups = [] as number[][];
@@ -360,15 +379,13 @@ class Coyote {
       });
     }
     const normalDescription = valueGroups.map((sameNumbers) => sameNumbers.join(' / ')).join('\n');
-    const optionDescription = optionCards.map((card) => Coyote.parseCardValue(card)).join('\n');
+    const optionDescription = optionCards.map((card) => Coyote.displayCardValue(card)).join('\n');
     const description = `${normalDescription}\n${optionDescription}`;
     const embed = {
       title: '捨てカード一覧',
       color,
       description,
     };
-    message.channel.send({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   }
 }
-
-export { Coyote };
