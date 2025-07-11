@@ -1,10 +1,17 @@
-import { Client } from 'discord.js';
+import { Client, Events, GatewayIntentBits } from 'discord.js';
 import { config } from 'dotenv';
 import { Coyote } from './Coyote';
 
 config();
 
-const client = new Client();
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.DirectMessages,
+  ],
+});
 
 client.on('ready', () => {
   console.log('コヨーテやるお');
@@ -13,7 +20,7 @@ client.on('ready', () => {
 const servers = {} as { [key in string]: Coyote };
 
 // eslint-disable-next-line complexity
-client.on('message', (message) => {
+client.on(Events.MessageCreate, (message) => {
   if (message.author.bot) {
     return;
   }

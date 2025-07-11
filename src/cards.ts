@@ -46,7 +46,7 @@ const cards = [
   ...minusTens,
 ];
 
-export { cards, shuffle, Card };
+export { cards, shuffle, type Card };
 
 const shuffle = (cards: Card[]) => {
   let original = [...cards];

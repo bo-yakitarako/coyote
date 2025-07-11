@@ -1,4 +1,4 @@
-import { Guild, Message } from 'discord.js';
+import { Guild, Message as OriginalMessage, OmitPartialGroupDMChannel } from 'discord.js';
 import { config } from 'dotenv';
 import { Card, cards, shuffle } from './cards';
 
@@ -9,6 +9,8 @@ type Player = {
   life: number;
   history: { [key in number]: number };
 };
+
+type Message = OmitPartialGroupDMChannel<OriginalMessage<boolean>>;
 
 const color = 0xe83e1b;
 config();
@@ -79,11 +81,13 @@ class Coyote {
     const member = (message.guild as Guild).members.cache.find((user) => user.id === id);
     if (typeof member !== 'undefined') {
       member.user.send({
-        embed: {
-          title: 'みんなのカード',
-          color,
-          description,
-        },
+        embeds: [
+          {
+            title: 'みんなのカード',
+            color,
+            description,
+          },
+        ],
       });
     }
   }
@@ -168,11 +172,13 @@ class Coyote {
     const description = `**${number}**`;
 
     await message.channel.send({
-      embed: {
-        title: '今の数字',
-        description,
-        color,
-      },
+      embeds: [
+        {
+          title: '今の数字',
+          description,
+          color,
+        },
+      ],
     });
     message.channel.send(nextPlayer);
   }
@@ -192,7 +198,7 @@ class Coyote {
       color,
       fields,
     };
-    message.channel.send({ embed });
+    message.channel.send({ embeds: [embed] });
     this.goNext(message, isReset);
   }
 
@@ -299,7 +305,7 @@ class Coyote {
       color,
       description: 'おめでとうございます✨',
     };
-    await message.channel.send({ embed });
+    await message.channel.send({ embeds: [embed] });
     this.count = null;
     this.callerIndex = 0;
     this.players = [...this.players, ...this.deadPlayers];
@@ -337,7 +343,7 @@ class Coyote {
       color,
       description,
     };
-    message.channel.send({ embed });
+    message.channel.send({ embeds: [embed] });
   }
 
   public showDiscards(message: Message) {
@@ -361,7 +367,7 @@ class Coyote {
       color,
       description,
     };
-    message.channel.send({ embed });
+    message.channel.send({ embeds: [embed] });
   }
 }
 
