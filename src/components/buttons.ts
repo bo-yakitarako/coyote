@@ -36,7 +36,8 @@ const registration = {
       coyote.shufflePlayers();
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       await interaction.deleteReply();
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(registration.cards.component);
+      const { cards, life, discards } = button;
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents([cards, life, discards]);
       await (interaction.channel as TextChannel).send({
         content: coyote.createStartMessage(),
         components: [row],
@@ -45,12 +46,30 @@ const registration = {
   },
   cards: {
     component: new ButtonBuilder()
-      .setLabel('みんなのカードを見る')
+      .setLabel('カードを見る')
       .setCustomId('cards')
       .setStyle(ButtonStyle.Primary),
     execute: async (interaction: ButtonInteraction, coyote: Coyote) => {
       const embed = coyote.embedDealedCards(interaction.guild!, interaction.user.id);
       await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    },
+  },
+  life: {
+    component: new ButtonBuilder()
+      .setLabel('ライフを見る')
+      .setCustomId('life')
+      .setStyle(ButtonStyle.Primary),
+    execute: async (interaction: ButtonInteraction, coyote: Coyote) => {
+      await coyote.showLife(interaction);
+    },
+  },
+  discards: {
+    component: new ButtonBuilder()
+      .setLabel('捨て札を見る')
+      .setCustomId('discards')
+      .setStyle(ButtonStyle.Primary),
+    execute: async (interaction: ButtonInteraction, coyote: Coyote) => {
+      await coyote.showDiscards(interaction);
     },
   },
 };

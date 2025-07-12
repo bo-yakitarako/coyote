@@ -41,30 +41,6 @@ const registration = {
       });
     },
   },
-  life: {
-    data: new SlashCommandBuilder()
-      .setName('life')
-      .setDescription('今のみんなのライフを表示するよ'),
-    async execute(interaction: ChatInputCommandInteraction) {
-      const coyote = battle.get(interaction);
-      if (coyote === null) {
-        await interaction.reply('存在しない記憶を知覚できぬ不覚...');
-        return;
-      }
-      await coyote.showLife(interaction);
-    },
-  },
-  discards: {
-    data: new SlashCommandBuilder().setName('discards').setDescription('今の捨て札を表示するよ'),
-    async execute(interaction: ChatInputCommandInteraction) {
-      const coyote = battle.get(interaction);
-      if (coyote === null) {
-        await interaction.reply('存在しない記憶を知覚できぬ不覚...');
-        return;
-      }
-      await coyote.showDiscards(interaction);
-    },
-  },
   reset: {
     data: new SlashCommandBuilder()
       .setName('reset')

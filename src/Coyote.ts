@@ -5,7 +5,6 @@ import {
   Interaction,
   ButtonInteraction,
   User,
-  ChatInputCommandInteraction,
   MessageFlags,
   ActionRowBuilder,
   ButtonBuilder,
@@ -193,7 +192,8 @@ export class Coyote {
     const nextPlayer = `次→ <@!${this.players[this.callerIndex].id}>`;
     const description = `**${number}**`;
 
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button.cards);
+    const { cards, life, discards } = button;
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents([cards, life, discards]);
     await message.channel.send({
       embeds: [
         {
@@ -318,7 +318,8 @@ export class Coyote {
     }
     this.orderByCaller();
     this.dealCards();
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button.cards);
+    const { life, discards } = button;
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents([button.cards, life, discards]);
     message.channel.send({
       content: this.createStartMessage('次のゲームに移ります'),
       components: [row],
@@ -353,7 +354,7 @@ export class Coyote {
     return this.isStart;
   }
 
-  public async showLife(interaction: ChatInputCommandInteraction) {
+  public async showLife(interaction: ButtonInteraction) {
     const survivors = this.players.map(({ name, life }) => `${name}: ${life}`);
     const dead = this.deadPlayers.map(({ name }) => `${name}: 死亡`);
     const description = `${survivors.join('\n')}\n${dead.join('\n')}`;
@@ -365,7 +366,7 @@ export class Coyote {
     await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   }
 
-  public async showDiscards(interaction: ChatInputCommandInteraction) {
+  public async showDiscards(interaction: ButtonInteraction) {
     const normalCards = this.discards.filter(({ type }) => ['normal', 'reset'].includes(type));
     const optionCards = this.discards.filter(({ type }) => !['normal', 'reset'].includes(type));
     const valueGroups = [] as number[][];
