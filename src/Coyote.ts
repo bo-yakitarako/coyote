@@ -271,10 +271,10 @@ export class Coyote {
 
   private calculateScore(additional: Card | null) {
     let cards = this.players.map(({ card }) => card);
-    const isTwice = cards.some(({ type }) => type === 'twice');
     if (additional !== null) {
       cards.push(additional);
     }
+    const isTwice = cards.some(({ type }) => type === 'twice');
     if (cards.some(({ type }) => type === 'maxZero')) {
       cards = cards.filter(({ type }) => ['normal', 'reset'].includes(type));
       cards.sort((a, b) => b.value - a.value);
