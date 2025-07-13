@@ -24,7 +24,7 @@ client.on(Events.MessageCreate, (message) => {
     return;
   }
   const coyote = battle.get(message);
-  if (message.author.bot || coyote === null || !coyote.isCurrentPlayer(message.author)) {
+  if (coyote === null || !coyote.isCurrentPlayer(message.author)) {
     return;
   }
   const called = message.content.toLowerCase();
