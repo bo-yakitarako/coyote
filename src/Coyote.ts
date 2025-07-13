@@ -71,7 +71,7 @@ export class Coyote {
   }
 
   public async join(interaction: ButtonInteraction) {
-    const { id, displayName: name } = interaction.user;
+    const { id } = interaction.user;
     if (this.isStart) {
       await interaction.reply(`<@!${id}> スタートしちゃったから参加できないよー`);
       return;
@@ -82,9 +82,17 @@ export class Coyote {
     }
     const card = this.cards[0];
     const life = this.startLife;
+    const name = Coyote.displayName(interaction);
     const player = { id, name, card, life, history: {} } as Player;
     this.players = [...this.players, player];
     await interaction.reply(`<@!${id}> 参加しましたー`);
+  }
+
+  private static displayName({ guild, user }: Interaction) {
+    if (guild === null) {
+      return user.displayName;
+    }
+    return guild.members.cache.get(user.id)?.displayName ?? user.displayName;
   }
 
   public dealCards() {
