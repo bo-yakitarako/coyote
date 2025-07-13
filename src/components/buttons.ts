@@ -34,8 +34,7 @@ const registration = {
       coyote.start();
       coyote.dealCards();
       coyote.shufflePlayers();
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      await interaction.deleteReply();
+      await interaction.deferUpdate();
       const { cards, life, discards } = button;
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents([cards, life, discards]);
       await (interaction.channel as TextChannel).send({
