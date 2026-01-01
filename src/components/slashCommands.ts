@@ -10,9 +10,9 @@ import { battle } from '../Coyote';
 import { button } from './buttons';
 
 const registration = {
-  launch: {
+  coyote: {
     data: new SlashCommandBuilder()
-      .setName('launch')
+      .setName('coyote')
       .setDescription('コヨーテを開始するよ。ライフを一緒に指定できるよ')
       .addIntegerOption((option) =>
         option.setName('life').setDescription('ライフを指定するよ').setRequired(false),
